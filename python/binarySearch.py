@@ -1,7 +1,7 @@
 
 def binarySearchRecurse(arr, low, high, target, attr):
     if high >= low:
-        mid = len(arr) // 2
+        mid = (high + low) // 2
         
         if getattr(arr[mid], attr) == target:
            return mid
@@ -13,5 +13,5 @@ def binarySearchRecurse(arr, low, high, target, attr):
     else:
         return -1
 
-def binarySeach(arr, target, attr):
+def binarySearch(arr, target, attr):
     return binarySearchRecurse(arr, 0, len(arr) - 1, target, attr)
