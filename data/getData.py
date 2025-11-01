@@ -11,7 +11,7 @@ class Log:
 
 
 def getData():
-    df = pd.read_excel('/home/taran1s/cloud/Coursework/ComputationalThinking/assignmentOne/data/Data.xlsx')
+    df = pd.read_excel('/home/taran1s/cloud/Coursework/ComputationalThinking/assignmentOne/data/Data.ods')
 
     logs = []
 

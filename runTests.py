@@ -1,7 +1,11 @@
 from data.getData import getData
+
 from algorithms.sort.insertionSort import insertionSort
 from algorithms.sort.bucketSort import bucketSort 
 from algorithms.sort.mergeSort import mergeSort 
+
+from algorithms.search.linearSearch import linearSearch
+from algorithms.search.binarySearch import binarySearch
 
 import random, time, statistics as stats
 import pandas as pd
@@ -10,20 +14,28 @@ import copy
 import tracemalloc
 
 # Function to call per time test
-def time_execution(alg, data, key):
+def time_execution(alg, data, key, target=None):
     start = time.perf_counter() # mark the time we start execution
-    _ = alg(data, key)
-    return time.perf_counter() - start # return the current time - the start time
+    if target == None:
+        _ = alg(data, key)
+    else:
+        _ = alg(data, target, key)
+    return (time.perf_counter() - start) * 1000 # return the current time - the start time in ms
 
 
 # Run multiple time tests on an algorithm and generate a report
-def get_execution_times(alg, data, key, repeats, shuffle=True):
+def get_execution_times(alg, data, key, repeats=30, shuffle=True, search=False):
     results = []    
     for _ in range(repeats):
         cloneData = copy.deepcopy(data)
         if shuffle:
             random.shuffle(cloneData)
-        results.append(time_execution(alg, cloneData, key))
+        if search:
+            # When we introduct searching / sorting by different data types
+            # we need to change this
+            results.append(time_execution(alg, data, key, target=random.randint(1,2000))) 
+        else:
+            results.append(time_execution(alg, cloneData, key))
     return {
         "mean": sum(results) / len(results),
         "sdev": stats.pstdev(results),
@@ -33,9 +45,12 @@ def get_execution_times(alg, data, key, repeats, shuffle=True):
     }
 
 # Function to track the peak memory used by an algorithm
-def get_peak_memory(alg, data, key):
+def get_peak_memory(alg, data, key, target=None):
     tracemalloc.start()
-    _ = alg(data, key)
+    if target == None:
+        _ = alg(data, key)
+    else:
+        _ = alg(data, target, key)
     _, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
     return peak
@@ -44,7 +59,7 @@ def get_peak_memory(alg, data, key):
 if __name__ == "__main__":
     logs = getData()
 
-    tests = {
+    sortTests = {
         (insertionSort, "Insertion Sort", "No"),
         (bucketSort, "Bucket Sort", "No"),
         (mergeSort, "Merge Sort", "No"),
@@ -53,19 +68,19 @@ if __name__ == "__main__":
     results_shuffled = []
     results = []
 
-    for alg, name, key in tests:
+    for alg, name, key in sortTests:
         time_stats_shuffle = get_execution_times(
                     alg, 
-                    copy.deepcopy(logs),
+                    logs,
                     key,
-                    30,
-                    True)
+                    repeats=30,
+                    shuffle=True)
         time_stats = get_execution_times(
                     alg,
-                    copy.deepcopy(logs),
+                    logs,
                     key,
-                    30,
-                    False
+                    repeats=30,
+                    shuffle=False
                 )
 
         memory_stats = get_peak_memory(alg, copy.deepcopy(logs), key)
@@ -93,4 +108,39 @@ if __name__ == "__main__":
 
         pd.DataFrame(results).to_csv("results/sorting_unshuffled.csv", index=False)
         print("Unshuffled results written to csv")
+        
+    
+    # Run the search tests
+    searchTests = {
+            (linearSearch, "Linear Search", "No"),
+            (binarySearch, "Binary Search", "No")
+    }
 
+    results = []
+        
+        
+
+    for alg, name, key in searchTests:
+        logs_sorted = bucketSort(logs, key)
+
+        time_stats = get_execution_times(
+                alg,
+                logs_sorted,
+                key,
+                repeats=30,
+                shuffle=False,
+                search=True)
+
+        memory_stats = get_peak_memory(alg, logs_sorted, key, target=random.randint(1,2000))
+
+        results.append({
+            "Algorithm": name,
+            "Key": key,
+            "Repeats": time_stats["size"],
+            "Mean Time": time_stats["mean"],
+            "Standard Deviation": time_stats["sdev"],
+            "Top 95": time_stats["p95"],
+            "Peak Memory": memory_stats})
+
+        pd.DataFrame(results).to_csv("results/search.csv", index=False)
+        print("Search results written to csv")
