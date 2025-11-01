@@ -68,5 +68,4 @@ def getGraphData():
     return graphs
 
 
-print(getGraphData())
 
